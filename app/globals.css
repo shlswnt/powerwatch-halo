@@ -1,0 +1,224 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  /* Numbers use Geist too (tabular figures, below); no separate mono face. */
+  --font-mono: var(--font-sans);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Light theme mirrors the dark guidelines: off-white page and sidebar, white cards, 10–15 % black borders. */
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.145 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.94 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.145 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 15%);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.145 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  /* Opaque (10 % black over the sidebar), so the rail and panel lines read as one where they overlap. */
+  --sidebar-border: color-mix(in oklab, oklch(0 0 0) 10%, oklch(0.985 0 0));
+  --sidebar-ring: oklch(0.708 0 0);
+  /* Radius bands (spec §3), same in both themes. */
+  --band-100: #facc15;
+  --band-200: #fb923c;
+  --band-300: #f472b6;
+  --band-400: #a78bfa;
+  --band-500: #38bdf8;
+  --overlap: #ffffff;
+  --chart-total: oklch(0.269 0 0);
+  /* Map overlays: frosted and see-through, light or dark with the theme. */
+  --map-surface: rgb(255 255 255 / 0.6);
+  --map-surface-hover: rgb(255 255 255 / 0.85);
+  --map-fg: oklch(0.145 0 0);
+  --map-muted: oklch(0.45 0 0);
+  --map-border: rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: color-mix(in oklab, oklch(1 0 0) 10%, oklch(0.145 0 0));
+  --sidebar-ring: oklch(0.556 0 0);
+  --chart-total: #e5e5e5;
+  --map-surface: rgb(10 10 10 / 0.55);
+  --map-surface-hover: rgb(38 38 38 / 0.75);
+  --map-fg: #fafafa;
+  --map-muted: #a3a3a3;
+  --map-border: rgb(255 255 255 / 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+/* MapLibre's attribution slides with the desktop right panel (MapView sets --right-inset). */
+.maplibregl-ctrl-bottom-right {
+  transform: translateX(calc(-1 * var(--right-inset, 0px)));
+  transition: transform 300ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .maplibregl-ctrl-bottom-right { transition: none; }
+}
+
+/* MapLibre's attribution matches the map chrome: compact "i" button on the dark translucent surface, 32 px like the band legend.
+   Scoped under .maplibregl-map so these win over maplibre-gl.css, which loads later with the map chunk. */
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 32px;
+  padding: 0 32px 0 0;
+  border-radius: 16px;
+  background-color: transparent;
+  color: var(--map-fg);
+}
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  /* Exactly the legend's 32 px: one line of credits, the "i" button sitting over the right end. */
+  box-sizing: border-box;
+  height: 32px;
+  max-width: calc(100vw - 20px);
+  padding: 0 38px 0 12px;
+  background-color: var(--map-surface);
+  border: 1px solid var(--map-border);
+  backdrop-filter: blur(12px);
+}
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 30px;
+}
+.maplibregl-map .maplibregl-ctrl-attrib a {
+  color: var(--map-fg);
+}
+.maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  border: 1px solid var(--map-border);
+  background-color: var(--map-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5M12 8h.01'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 18px;
+  backdrop-filter: blur(12px);
+  /* Pinned over the box's bottom-right corner (covering its 1 px border) so it is level with the legend. */
+  top: auto;
+  bottom: -1px;
+  right: -1px;
+}
+/* Opened credits sit above the band legend (z-30) where they overlap it on narrow screens. */
+.maplibregl-map .maplibregl-ctrl-bottom-right:has(.maplibregl-compact-show) {
+  z-index: 40;
+}
+/* Dark theme: white "i". */
+.dark .maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fafafa' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5M12 8h.01'/%3E%3C/svg%3E");
+}
+
+/* Collapsed icon rail: the gap shrinks to the 65 px rail (icons + its line); the inset keeps its 8 px left margin,
+   the same as its top margin (unlayered, so it beats the gap utility width). */
+[data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] > [data-slot="sidebar-gap"] {
+  width: calc(var(--sidebar-width-icon) + 1px);
+}
