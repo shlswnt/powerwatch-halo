@@ -5,12 +5,14 @@ export interface Settings {
   labels: boolean
   footprints: boolean
   rings: boolean
+  /** Turn animations off even when the device doesn't ask for less motion (when it does, they're off anyway). */
+  reduceMotion: boolean
 }
 
-export const DEFAULT_SETTINGS: Settings = { countMode: 'all', labels: true, footprints: true, rings: true }
+export const DEFAULT_SETTINGS: Settings = { countMode: 'all', labels: true, footprints: true, rings: true, reduceMotion: false }
 
 const KEY = 'pwh-settings'
-const MODES: CountMode[] = ['range', 'all', 'hi']
+const MODES: CountMode[] = ['all', 'hi'] // a saved 'range' (no longer offered) falls back to the default
 
 export function safeStorage(): Storage | undefined {
   try {
@@ -31,6 +33,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | undefined): Set
       labels: bool('labels'),
       footprints: bool('footprints'),
       rings: bool('rings'),
+      reduceMotion: bool('reduceMotion'),
     }
   } catch {
     return DEFAULT_SETTINGS

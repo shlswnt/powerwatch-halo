@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { X } from 'lucide-react'
+import { Check, Link2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { AppSidebar, MobileSidebar } from '@/components/app-sidebar'
@@ -15,6 +15,7 @@ import { SettingsDialog } from '@/components/settings-dialog'
 import { TransformerList } from '@/components/transformer-list'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { compareStats, compareTint } from '@/lib/compare'
@@ -22,17 +23,19 @@ import { loadMeta, loadNear, loadTransformers } from '@/lib/data'
 import { filterTransformers, nearbyIds, sortTransformers, stepInList, toCsv, type SortKey } from '@/lib/list'
 import { singleBands } from '@/lib/map-style'
 import { EMPTY_NOTES, addNote, clearNotes, markRead, type NoteInput } from '@/lib/notifications'
-import { clearSelection, openTransformer, setOverlap, toggleMember } from '@/lib/selection'
+import { clearSelection, openTransformer, toggleMember } from '@/lib/selection'
 import { loadSettings, safeStorage, saveSettings, type Settings } from '@/lib/settings'
 import type { Meta, NearEntry, TownId, Transformer } from '@/lib/types'
 import { dropUnknown, parseView, serializeView, type ViewState } from '@/lib/url-state'
 
 /** Details card over the map's right edge: 384 px wide, 12 px from the edge. */
-const DETAILS_INSET = 396
 
 const MapView = dynamic(() => import('@/components/map-view'), { ssr: false, loading: () => <div className="h-full w-full bg-muted" /> })
 
 /** shadcn inset sidebar shell (as in the sidebar-inset example): sidebar on the left, the map in the inset. */
+/** Phone details sheet: half height, or full. */
+const SNAP_POINTS = [0.5, 1]
+
 export function Dashboard() {
   return (
     <SidebarProvider className="h-svh" style={{ '--sidebar-width': 'calc(4rem + 340px)', '--sidebar-width-icon': '4rem' } as CSSProperties}>
@@ -45,16 +48,28 @@ function DashboardBody() {
   const pathname = usePathname()
   const params = useSearchParams()
   // Not useSidebar(): its value changes on every collapse/expand, which would re-render the whole list and map at the
-  // start of the slide. Only the phone-sheet setter is needed, and SidebarBridge hands it over once.
+  // start of the slide. Only the phone sheet matters here, and SidebarBridge hands it over in a ref.
   const isMobile = useIsMobile()
   const openMobileRef = useRef<(open: boolean) => void>(() => {})
   const setOpenMobile = (open: boolean) => openMobileRef.current(open)
-  const view = useMemo(() => parseView(new URLSearchParams(params.toString())), [params])
   // The URL is the source of truth. Updates go through history.replaceState (Next keeps useSearchParams in sync, with no
   // server round-trip), and each one starts from the URL as it is right now, so clicks faster than a re-render still stack.
+  // Next syncs useSearchParams in a later render, though, so the view is also kept here and set with the update: the new
+  // selection then renders together with the camera request, before the map starts flying, instead of landing mid-flight
+  // and stalling it. When Next's sync arrives the query is the same, so nothing re-renders for it.
+  const urlKey = serializeView(parseView(new URLSearchParams(params.toString())))
+  const [viewKey, setViewKey] = useState(urlKey)
+  const [syncedKey, setSyncedKey] = useState(urlKey)
+  if (urlKey !== syncedKey) {
+    setSyncedKey(urlKey)
+    setViewKey(urlKey)
+  }
+  const view = useMemo(() => parseView(new URLSearchParams(viewKey)), [viewKey])
   const updateView = useCallback((fn: (v: ViewState) => ViewState): ViewState => {
     const next = fn(parseView(new URLSearchParams(window.location.search)))
-    window.history.replaceState(null, '', `${pathname}${serializeView(next)}`)
+    const key = serializeView(next)
+    window.history.replaceState(null, '', `${pathname}${key}`)
+    setViewKey(key)
     return next
   }, [pathname])
 
@@ -72,6 +87,16 @@ function DashboardBody() {
   // Details pop up on the right when something is selected; the panel button hides / re-shows them.
   const [panelOpen, setPanelOpen] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(() => view.selected.length > 0) // phones: details in a bottom sheet
+  // The desktop pane's real height (it grows on narrow maps), so camera framing and the credits clear it.
+  const paneRef = useRef<HTMLElement>(null)
+  const [paneHeight, setPaneHeight] = useState(320)
+  useEffect(() => {
+    const el = paneRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setPaneHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isMobile])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortKey>('reach')
@@ -79,6 +104,12 @@ function DashboardBody() {
   const notify = useCallback((n: NoteInput) => setNotes((s) => addNote(s, n, Date.now())), [])
   const [camera, setCamera] = useState<Camera>({ kind: 'country', seq: 0 })
   const cameraTo = (c: CameraTarget) => setCamera((prev) => ({ ...c, seq: prev.seq + 1 }))
+
+  // The Reduce motion setting: globals.css switches every animation off under this attribute.
+  useEffect(() => {
+    if (settings.reduceMotion) document.documentElement.dataset.motion = 'reduce'
+    else delete document.documentElement.dataset.motion
+  }, [settings.reduceMotion])
 
   const setSettings = (s: Settings) => {
     setSettingsState(s)
@@ -152,20 +183,19 @@ function DashboardBody() {
   }, [lists, ready, view.radius])
 
   const fitSelection = (ids: string[]) => cameraTo(ids.length === 1 ? { kind: 'transformer', id: ids[0] } : { kind: 'selection', ids })
-  const pick = (id: string) => {
-    const next = updateView((v) => openTransformer(v, id))
+  // Phones layer the sheets: the details sheet stays open behind the list, which goes over it. Checking boxes builds
+  // the comparison behind the list; showing one transformer swaps the details and closes the list so it can be read.
+  const show = (next: ViewState) => {
     setPanelOpen(true)
     setSheetOpen(true)
-    // Phones: get the sidebar sheet out of the way so the details show (unless ticking several to compare).
     if (!next.overlap) setOpenMobile(false)
     if (next.selected.length) fitSelection(next.selected)
   }
-  const toggle = (id: string) => {
-    const next = updateView((v) => toggleMember(v, id))
-    setPanelOpen(true)
-    setSheetOpen(true)
-    if (next.selected.length) fitSelection(next.selected)
-  }
+  // A dot on the map: while comparing it adds or removes that transformer.
+  const pick = (id: string) => show(updateView((v) => openTransformer(v, id)))
+  // A row in the list always shows that transformer (checkboxes build comparisons).
+  const showOne = (id: string) => show(updateView((v) => ({ ...v, overlap: false, selected: [id] })))
+  const toggle = (id: string) => show(updateView((v) => toggleMember(v, id)))
   const setTown = (town: TownId | null) => {
     updateView((v) => ({ ...v, town, selected: [] }))
     cameraTo(town ? { kind: 'town', town } : { kind: 'country' })
@@ -190,7 +220,7 @@ function DashboardBody() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const compareNearby = (t: Transformer) => {
-    const ids = [t.id, ...nearbyIds(transformers ?? [], t)]
+    const ids = [t.id, ...nearby]
     updateView((v) => ({ ...v, overlap: true, selected: ids }))
     fitSelection(ids)
   }
@@ -200,10 +230,12 @@ function DashboardBody() {
     setSheetOpen(false)
     // Leave panelOpen false: the URL change lands a frame after any state set here, so reopening now would briefly
     // re-show the old selection and bounce the card. Every path that selects again (pick, toggle) reopens it.
-    setTimeout(() => updateView((v) => ({ ...v, selected: [] })), 300)
+    setTimeout(() => updateView(clearSelection), 300)
   }
 
   const single = !view.overlap && selectedTs.length === 1 ? selectedTs[0] : null
+  // Every other transformer within 500 m of the one being viewed, for "Compare with nearby".
+  const nearby = transformers && single ? nearbyIds(transformers, single) : []
   const hasDetails = selectedTs.length > 0
   const shown = hasDetails && (isMobile ? sheetOpen : panelOpen)
 
@@ -212,24 +244,26 @@ function DashboardBody() {
     details = (
       <OverlapDetails selected={selectedTs} radius={view.radius} stats={stats}
         failed={view.selected.some((id) => failedNear.includes(id))} onRetry={retryNear}
-        onRadius={(radius) => updateView((v) => ({ ...v, radius }))} onRemove={(id) => updateView((v) => toggleMember(v, id))} />
+        onRadius={(radius) => updateView((v) => ({ ...v, radius }))} onRemove={(id) => updateView((v) => toggleMember(v, id))}
+        onLocate={(id) => cameraTo({ kind: 'transformer', id })} />
     )
   else if (transformers && single)
     details = (
-      <TransformerDetails t={single} settings={settings}
+      <TransformerDetails t={single} nearby={nearby.length}
         onStep={(dir) => pick(stepInList(list.map((t) => t.id), single.id, dir))}
         onCompareNearby={() => compareNearby(single)} />
     )
 
+  // Switching between single and compare fades the card in; stepping between transformers keeps the cards and
+  // animates only what's in them (see TransformerDetails).
+  const detailsBody = details && (
+    <div key={view.overlap ? 'overlap' : 'single'} data-testid="details-body" className="flex min-h-0 flex-1 animate-in fade-in flex-col duration-300">{details}</div>
+  )
+
   const transformerList = transformers ? (
     <TransformerList list={list} town={view.town} query={query} sort={sort} compare={view.overlap} selected={view.selected} settings={settings}
-      onQuery={setQuery} onSort={setSort} onCompare={(on) => updateView((v) => setOverlap(v, on))}
-      onClear={() => updateView((v) => ({ ...v, selected: [] }))} onPick={pick} onToggle={toggle} onCsv={downloadCsv}
-      onOpenCompare={() => {
-        setPanelOpen(true)
-        setSheetOpen(true)
-        setOpenMobile(false)
-      }} />
+      onQuery={setQuery} onSort={setSort}
+      onClear={() => updateView(clearSelection)} onPick={showOne} onToggle={toggle} onCsv={downloadCsv} />
   ) : (
     <p className="p-2 text-sm text-muted-foreground">Loading transformers…</p>
   )
@@ -240,36 +274,41 @@ function DashboardBody() {
       {isMobile
         ? <MobileSidebar onHome={home} onSettings={() => setSettingsOpen(true)}>{transformerList}</MobileSidebar>
         : <AppSidebar onHome={home} onSettings={() => setSettingsOpen(true)}>{transformerList}</AppSidebar>}
-      <SidebarInset className="min-h-0 overflow-hidden md:peer-data-[variant=inset]:ml-2">
+      {/* Corners nest evenly: the frame's 20 px radius is the 10 px radius of everything floating on the map plus the
+          10 px it sits in from the edge. */}
+      <SidebarInset className="@container/map min-h-0 overflow-hidden md:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:rounded-[20px]">
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-[inherit]">
           <MapView transformers={transformers ?? []} visible={list} settings={settings} view={view} tint={tint} camera={camera} loading={!transformers}
             onPick={pick} onToggle={toggle} onTown={setTown} onIssue={notify} onFit={fit}
             leading={<SidebarTrigger className={`${MAP_BUTTON} shadow-sm`} />}
             controls={<NotificationsButton notes={notes} onOpen={() => setNotes(markRead)} onClear={() => setNotes(clearNotes)} onRetry={retryNear} />}
-            rightInset={!isMobile && shown ? DETAILS_INSET : 0} panelWidth={isMobile ? 0 : DETAILS_INSET} />
+            bottomInset={!isMobile && shown ? paneHeight + 10 : 0} panelHeight={isMobile ? 0 : paneHeight + 10} />
           {!isMobile && (
-            // Pops up over the map when a transformer is picked; always mounted so it slides, inert while hidden.
-            <aside aria-label="Details" inert={!shown}
-              className={`absolute inset-y-3 right-3 z-20 flex w-[384px] max-w-[calc(100%-24px)] flex-col overflow-hidden ${PANEL_SURFACE} ${SLIDE} ${shown ? '' : 'translate-x-[calc(100%+12px)]'}`}>
-              <div className="flex shrink-0 items-center justify-between border-b py-1.5 pl-4 pr-1.5">
-                <span className="text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">{view.overlap ? 'Overlap' : 'Transformer'}</span>
-                <Button variant="ghost" size="icon" className="size-9" aria-label="Close details" onClick={closeDetails}><X /></Button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">{details}</div>
+            // A landscape pane along the bottom of the map, sliding up when a transformer is picked; always mounted so it
+            // slides, inert while hidden. 10 px in from the map edges like everything else floating on the map. 320 px
+            // tall; on a narrow map (under 660 px, where its contents stack) it grows to 55% of the map's height.
+            <aside ref={paneRef} aria-label="Details" inert={!shown}
+              className={`@container absolute inset-x-[10px] bottom-[10px] z-20 flex h-[320px] max-h-[calc(100%-20px)] flex-col @max-[41.25rem]/map:h-[55%] overflow-hidden ${PANEL_SURFACE} ${SLIDE} ${shown ? '' : 'translate-y-[calc(100%+10px)]'}`}>
+              <DetailsHeader title={view.overlap ? 'Overlap' : 'Transformer'} onClose={closeDetails} />
+              {detailsBody}
             </aside>
           )}
         </div>
       </SidebarInset>
 
       {isMobile && (
-        <Drawer open={shown} onOpenChange={(o) => !o && setSheetOpen(false)} modal={false} snapPoints={[0.5, 1]}>
-          <DrawerContent className="h-[100dvh]">
+        // Taps on the map don't dismiss it (they pick transformers, and closing would replay the slide-in each time):
+        // it closes with ✕, a swipe down, or when nothing is selected any more.
+        // Only a swipe down or Escape dismisses it (✕ has its own handler). The list sheet opening over it takes focus,
+        // which must not close it: the details stay behind the list.
+        <Drawer open={shown} onOpenChange={(o, d) => !o && (d.reason === 'swipe' || d.reason === 'escape-key') && setSheetOpen(false)}
+          modal={false} disablePointerDismissal snapPoints={SNAP_POINTS}>
+          {/* At the half-height snap the bottom of the sheet sits below the screen; the details body pads by that offset so
+              its end is reachable. Base UI's variable doesn't inherit, so the sheet copies it to --sheet-offset. */}
+          <DrawerContent className="h-[100dvh] [--sheet-offset:var(--drawer-snap-point-offset,0px)]">
             <DrawerTitle className="sr-only">Details</DrawerTitle>
-            <div className="flex shrink-0 items-center justify-between px-4 pb-1">
-              <span className="text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">{view.overlap ? 'Overlap' : 'Transformer'}</span>
-              <Button variant="ghost" size="icon" className="size-11" aria-label="Close details" onClick={closeDetails}><X /></Button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-6">{details}</div>
+            <DetailsHeader title={view.overlap ? 'Overlap' : 'Transformer'} onClose={closeDetails} />
+            {detailsBody}
           </DrawerContent>
         </Drawer>
       )}
@@ -278,7 +317,47 @@ function DashboardBody() {
   )
 }
 
-/** Passes the sidebar's phone-sheet setter out without making the dashboard a consumer of the sidebar context. */
+/** The details pane's header, the same on desktop and phones: one 48 px row over a full-width line, the title styled
+    like the panel's, and a compact ✕ whose icon sits on the 16 px content edge (with a 44 px tap area for touch). */
+function DetailsHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div data-testid="details-header" className="flex h-12 shrink-0 items-center justify-between gap-2 border-b pl-4 pr-2">
+      <span data-testid="details-title" className="text-[15px] font-semibold leading-tight tracking-tight">{title}</span>
+      <div className="flex items-center gap-1">
+        <CopyLinkButton />
+        <Button variant="ghost" size="icon" className={HEADER_ICON} aria-label="Close details" onClick={onClose}><X /></Button>
+      </div>
+    </div>
+  )
+}
+
+const HEADER_ICON = 'relative size-8 after:absolute after:-inset-1.5'
+
+/** Copies the page's link, which holds the whole view (selection, compare mode, city, radius), so whoever opens it sees
+    the same thing. A ✓ and a toast confirm it. */
+function CopyLinkButton() {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      toast.success('Link copied', { description: 'Anyone with the link sees this view.' })
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error("Couldn't copy the link", { description: 'Copy it from the address bar instead.' })
+    }
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="ghost" size="icon" className={HEADER_ICON} aria-label="Copy link" onClick={copy} />}>
+        {copied ? <Check /> : <Link2 />}
+      </TooltipTrigger>
+      <TooltipContent>Copy link</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Passes the phone list sheet's setter out without making the dashboard a consumer of the sidebar context. */
 function SidebarBridge({ setterRef }: { setterRef: { current: (open: boolean) => void } }) {
   const { setOpenMobile } = useSidebar()
   useEffect(() => {

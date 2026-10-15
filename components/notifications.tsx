@@ -1,10 +1,12 @@
 'use client'
 
 import { Bell, CircleAlert, TriangleAlert } from 'lucide-react'
+import { useState } from 'react'
 import { MAP_BUTTON, PANEL_SURFACE } from '@/components/map-chrome'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { NoteState } from '@/lib/notifications'
+import { cn } from '@/lib/utils'
 
 interface Props {
   notes: NoteState
@@ -14,16 +16,18 @@ interface Props {
 }
 
 export function NotificationsButton({ notes, onOpen, onClear, onRetry }: Props) {
+  const [shownUnread, setShownUnread] = useState(notes.unread)
+  if (notes.unread > 0 && notes.unread !== shownUnread) setShownUnread(notes.unread)
   return (
     <Popover onOpenChange={(open) => open && onOpen()}>
       <PopoverTrigger
         render={<Button size="icon" variant="ghost" className={`relative ${MAP_BUTTON} shadow-sm`} aria-label={`Notifications, ${notes.unread} unread`} />}>
         <Bell />
-        {notes.unread > 0 && (
-          <span aria-hidden className="absolute -right-1 -top-1 min-w-5 rounded-full bg-destructive px-1 text-center text-[10px] font-semibold leading-5 text-white">
-            {notes.unread}
-          </span>
-        )}
+        {/* Pops in and out with CSS; keeps its last number while it shrinks away. */}
+        <span aria-hidden className={cn('absolute -right-1 -top-1 min-w-5 rounded-full bg-destructive px-1 text-center text-[10px] font-semibold leading-5 text-white',
+          'transition-[opacity,scale] duration-200 ease-out motion-reduce:transition-none', notes.unread > 0 ? 'scale-100 opacity-100' : 'scale-50 opacity-0')}>
+          {shownUnread}
+        </span>
       </PopoverTrigger>
       {/* Opens to the left of the bell, styled like the details panel. */}
       <PopoverContent side="left" align="start" sideOffset={12}
@@ -39,7 +43,7 @@ export function NotificationsButton({ notes, onOpen, onClear, onRetry }: Props) 
             {notes.items.map((n) => {
               const Icon = n.severity === 'error' ? CircleAlert : TriangleAlert
               return (
-                <li key={n.id} className="flex items-start gap-2 rounded-md bg-muted/50 p-2">
+                <li key={n.id} className="flex animate-in fade-in slide-in-from-top-1 items-start gap-2 rounded-md bg-muted/50 p-2 duration-300">
                   <Icon className={n.severity === 'error' ? 'mt-0.5 size-4 shrink-0 text-destructive' : 'mt-0.5 size-4 shrink-0 text-amber-500'} aria-label={n.severity} />
                   <div className="min-w-0 flex-1">
                     <p className="break-words">{n.message}{n.count > 1 && ` (×${n.count})`}</p>

@@ -23,7 +23,7 @@ const overlaps = async (a: Locator, b: Locator) => {
   return x.x < y.x + y.width && y.x < x.x + x.width && x.y < y.y + y.height && y.y < x.y + x.height
 }
 
-test('the status pill covers neither the legend nor the details card', async ({ page, isMobile }) => {
+test('the status pill does not cover the details card', async ({ page, isMobile }) => {
   test.skip(isMobile, 'desktop layouts')
   for (const width of [1440, 1100]) {
     await page.setViewportSize({ width, height: 900 })
@@ -31,7 +31,6 @@ test('the status pill covers neither the legend nor the details card', async ({ 
     await page.goto(LINK)
     const pill = page.getByRole('status')
     await expect(pill).toContainText('Building footprints could not load', { timeout: 15000 })
-    expect(await overlaps(pill, page.getByTestId('band-legend'))).toBe(false)
     expect(await overlaps(pill, page.locator('aside[aria-label="Details"]'))).toBe(false)
   }
 })

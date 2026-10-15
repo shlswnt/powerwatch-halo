@@ -55,13 +55,13 @@ export function stepInList(ids: string[], id: string, dir: 1 | -1): string {
   return ids[(i + dir + ids.length) % ids.length]
 }
 
-export function nearbyIds(ts: Transformer[], t: Transformer, maxM = 1000, k = 2): string[] {
+/** Every other transformer within maxM (the outer 500 m ring by default), nearest first. */
+export function nearbyIds(ts: Transformer[], t: Transformer, maxM = 500): string[] {
   return ts
     .filter((o) => o.id !== t.id)
     .map((o) => [o.id, haversine(t.lat, t.lon, o.lat, o.lon)] as const)
     .filter(([, d]) => d <= maxM)
     .sort((a, b) => a[1] - b[1])
-    .slice(0, k)
     .map(([id]) => id)
 }
 
