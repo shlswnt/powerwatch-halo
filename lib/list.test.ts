@@ -54,12 +54,15 @@ describe('list helpers', () => {
     expect(stepInList(ids, 'zzz', 1)).toBe('a')
     expect(stepInList([], 'zzz', 1)).toBe('zzz')
   })
-  it('nearby: up to k others within maxM, nearest first', () => {
+  it('nearby: every other transformer within 500 m, nearest first, however many', () => {
     const base = t('n0', 'Base', 'bo', [0, 0, 0, 0, 0], 8, -13)
-    const near1 = t('n1', 'Near', 'bo', [0, 0, 0, 0, 0], 8.002, -13)
-    const near2 = t('n2', 'Nearer', 'bo', [0, 0, 0, 0, 0], 8.001, -13)
+    const near1 = t('n1', 'Near', 'bo', [0, 0, 0, 0, 0], 8.002, -13) // ~222 m
+    const near2 = t('n2', 'Nearer', 'bo', [0, 0, 0, 0, 0], 8.001, -13) // ~111 m
+    const near3 = t('n4', 'Edge', 'bo', [0, 0, 0, 0, 0], 8.0044, -13) // ~489 m
+    const out = t('n5', 'Just out', 'bo', [0, 0, 0, 0, 0], 8.0046, -13) // ~511 m
     const far = t('n3', 'Far', 'bo', [0, 0, 0, 0, 0], 8.02, -13)
-    expect(nearbyIds([base, near1, near2, far], base)).toEqual(['n2', 'n1'])
+    expect(nearbyIds([base, near1, near2, near3, out, far], base)).toEqual(['n2', 'n1', 'n4'])
+    expect(nearbyIds([base, far], base)).toEqual([])
   })
   it('CSV: header, counts and cumulative, quoted names', () => {
     const lines = toCsv([ts[3]]).split('\n')

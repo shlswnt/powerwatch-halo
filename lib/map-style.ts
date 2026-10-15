@@ -18,7 +18,7 @@ export function imageryStyle(token: string, labels: boolean): StyleSpecification
         tiles: [`https://api.mapbox.com/styles/v1/mapbox/${style}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`],
         tileSize: 512,
         maxzoom: 20,
-        attribution: '© Mapbox © OpenStreetMap © Maxar',
+        attribution: 'Maps © Mapbox © OpenStreetMap © Maxar',
       },
     },
     layers: [

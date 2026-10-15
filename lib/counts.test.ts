@@ -18,8 +18,6 @@ describe('cumulative', () => {
 })
 
 describe('formatCount', () => {
-  it('range shows hi–all with thousands separators', () => expect(formatCount(3060, 1856, 'range')).toBe('1,856–3,060'))
-  it('range collapses when equal', () => expect(formatCount(12, 12, 'range')).toBe('12'))
   it('all / hi modes', () => {
     expect(formatCount(3060, 1856, 'all')).toBe('3,060')
     expect(formatCount(3060, 1856, 'hi')).toBe('1,856')

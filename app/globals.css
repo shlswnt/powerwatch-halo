@@ -97,7 +97,7 @@
   --map-surface-hover: rgb(255 255 255 / 0.85);
   --map-fg: oklch(0.145 0 0);
   --map-muted: oklch(0.45 0 0);
-  --map-border: rgb(0 0 0 / 0.1);
+  --map-border: rgb(0 0 0 / 0.14); /* mirrors dark mode: a hairline in the opposite tone */
 }
 
 .dark {
@@ -137,7 +137,7 @@
   --map-surface-hover: rgb(38 38 38 / 0.75);
   --map-fg: #fafafa;
   --map-muted: #a3a3a3;
-  --map-border: rgb(255 255 255 / 0.1);
+  --map-border: rgb(255 255 255 / 0.14);
 }
 
 @layer base {
@@ -154,26 +154,39 @@
     font-variant-numeric: tabular-nums;
   }
 }
-/* MapLibre's attribution slides with the desktop right panel (MapView sets --right-inset). */
+/* MapLibre's attribution rises with the details pane along the bottom of the desktop map (MapView sets --bottom-inset). */
 .maplibregl-ctrl-bottom-right {
-  transform: translateX(calc(-1 * var(--right-inset, 0px)));
-  transition: transform 300ms ease-out;
+  transform: translateY(calc(-1 * var(--bottom-inset, 0px)));
+  transition: transform 300ms var(--ease-out); /* Tailwind's ease-out, like the map buttons and the card (SLIDE) */
 }
-@media (prefers-reduced-motion: reduce) {
-  .maplibregl-ctrl-bottom-right { transition: none; }
+/* The Reduce motion setting (html[data-motion=reduce]): nothing animates or transitions, whatever the device says. */
+:root[data-motion='reduce'] *, :root[data-motion='reduce'] *::before, :root[data-motion='reduce'] *::after {
+  animation: none !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
 }
 
-/* MapLibre's attribution matches the map chrome: compact "i" button on the dark translucent surface, 32 px like the band legend.
+@media (prefers-reduced-motion: reduce) {
+  .maplibregl-ctrl-bottom-right { transition: none; }
+  .maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show { animation: none; }
+  /* Enter and exit animations (tw-animate-css) are skipped too, so things just appear. */
+  .animate-in, .animate-out { animation: none !important; }
+}
+
+/* MapLibre's attribution matches the map chrome: compact "i" button on the dark translucent surface, 32 px tall.
    Scoped under .maplibregl-map so these win over maplibre-gl.css, which loads later with the map chunk. */
 .maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact {
   min-height: 32px;
   padding: 0 32px 0 0;
   border-radius: 16px;
+  /* The same 1 px border as when open, just transparent, so the "i" pinned over the corner never moves. */
+  box-sizing: border-box;
+  border: 1px solid transparent;
   background-color: transparent;
   color: var(--map-fg);
 }
 .maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
-  /* Exactly the legend's 32 px: one line of credits, the "i" button sitting over the right end. */
+  /* 32 px: one line of credits, the "i" button sitting over the right end. */
   box-sizing: border-box;
   height: 32px;
   max-width: calc(100vw - 20px);
@@ -181,6 +194,20 @@
   background-color: var(--map-surface);
   border: 1px solid var(--map-border);
   backdrop-filter: blur(12px);
+  /* Opening slides the credits out of the "i" circle, leftwards, on the map's usual 300 ms curve. */
+  animation: attrib-slide-out 300ms var(--ease-out);
+}
+@keyframes attrib-slide-out {
+  from { clip-path: inset(0 0 0 calc(100% - 32px) round 16px); }
+  to { clip-path: inset(0 0 0 0 round 16px); }
+}
+/* Closing plays it backwards: MapView holds the close until it ends. */
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show.attrib-closing {
+  animation: attrib-slide-in 300ms var(--ease-out) forwards;
+}
+@keyframes attrib-slide-in {
+  from { clip-path: inset(0 0 0 0 round 16px); }
+  to { clip-path: inset(0 0 0 calc(100% - 32px) round 16px); }
 }
 .maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
   overflow: hidden;
@@ -203,14 +230,22 @@
   background-repeat: no-repeat;
   background-size: 18px;
   backdrop-filter: blur(12px);
-  /* Pinned over the box's bottom-right corner (covering its 1 px border) so it is level with the legend. */
+  /* Pinned over the box's bottom-right corner (covering its 1 px border). */
   top: auto;
   bottom: -1px;
   right: -1px;
 }
-/* Opened credits sit above the band legend (z-30) where they overlap it on narrow screens. */
+/* Opened credits sit above the other map overlays (z-30). */
 .maplibregl-map .maplibregl-ctrl-bottom-right:has(.maplibregl-compact-show) {
   z-index: 40;
+}
+/* MapLibre glows blue on any focus, so a click would leave the "i" outlined. Show a ring for keyboard focus only, in the
+   theme's ring colour like the shadcn buttons. */
+.maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:focus {
+  box-shadow: none;
+}
+.maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
 }
 /* Dark theme: white "i". */
 .dark .maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
@@ -222,3 +257,13 @@
 [data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] > [data-slot="sidebar-gap"] {
   width: calc(var(--sidebar-width-icon) + 1px);
 }
+
+/* Details contents entering when the transformer changes: opacity and transform only, so the compositor runs them and
+   they stay smooth while the map flies (tw-animate-css's enter also animates filter). */
+.swap-in { animation: swap-in 300ms var(--ease-out); }
+.swap-in-right { animation-name: swap-in-right; }
+.swap-in-left { animation-name: swap-in-left; }
+@keyframes swap-in { from { opacity: 0; } }
+@keyframes swap-in-right { from { opacity: 0; transform: translateX(24px); } }
+@keyframes swap-in-left { from { opacity: 0; transform: translateX(-24px); } }
+@media (prefers-reduced-motion: reduce) { .swap-in { animation: none; } }
