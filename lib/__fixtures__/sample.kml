@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Fixture</name>
+    <Folder>
+      <name>Freetown - Transformers</name>
+      <Placemark>
+        <name>Africanus Road</name>
+        <description><![CDATA[1000kva transformer<br>by Leoneco filling station &amp; fisher lane]]></description>
+        <Point><coordinates>
+          -13.198767,8.4768096,0
+        </coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name></name>
+        <Point><coordinates>-13.2,8.45,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Feeder line</name>
+        <LineString><coordinates>-13.2,8.45,0 -13.21,8.46,0</coordinates></LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Outside Freetown - Substations &amp; Transformers</name>
+      <Placemark>
+        <name>Bo Inn Hotel</name>
+        <description><![CDATA[<img src="https://example.com/a.png" height="200" width="auto" /><br><br>Bo Inn transformer. Capacity 400kva.<br><br>transformer_functional - Yes]]></description>
+        <Point><coordinates>-11.7593816,7.9421463,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Twin A</name>
+        <Point><coordinates>-11.7448012,7.9491344,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Twin B</name>
+        <Point><coordinates>-11.7448012,7.9491344,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Instrument Sites</name>
+      <Placemark>
+        <name>Ignored</name>
+        <Point><coordinates>-13.1,8.4,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>
