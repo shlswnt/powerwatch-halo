@@ -2,7 +2,7 @@
 
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
-import { Building2, CircleDot, Database, Monitor, Moon, Sun, Tags, Waves, type LucideIcon } from 'lucide-react'
+import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { ReactNode } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -31,50 +31,62 @@ const COUNTS: { value: CountMode; label: string; hint: string }[] = [
   { value: 'hi', label: 'High Confidence', hint: 'Only buildings detected with high confidence.' },
 ]
 
-const LAYERS: { key: 'labels' | 'footprints' | 'rings'; label: string; hint: string; icon: LucideIcon }[] = [
-  { key: 'labels', label: 'Map labels', hint: 'Place, road and landmark names', icon: Tags },
-  { key: 'footprints', label: 'Building footprints', hint: 'Outlines coloured by distance band', icon: Building2 },
-  { key: 'rings', label: 'Rings', hint: '100–500 m distance rings around a transformer', icon: CircleDot },
+// Hints are kept short enough to stay on one line on a phone.
+const LAYERS: { key: 'labels' | 'footprints' | 'rings'; label: string; hint: string }[] = [
+  { key: 'labels', label: 'Map labels', hint: 'Place, road and landmark names' },
+  { key: 'footprints', label: 'Building footprints', hint: 'Coloured by distance band' },
+  { key: 'rings', label: 'Rings', hint: '100–500 m distance rings' },
 ]
 
 /** A settings section: a small heading, then its controls. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2.5">
+    <section className="flex flex-col gap-1.5">
       <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
       {children}
     </section>
   )
 }
 
-/** Settings as a shadcn-style block: Appearance (theme cards, reduce motion), Counts (segmented), Map layers (one card of switches),
-    and About the data (labelled facts). Choices are kept in this browser. */
+/** A labelled switch with a one-line hint. */
+function SwitchRow({ id, label, hint, checked, onChange }: { id: string; label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <Label htmlFor={id}>{label}</Label>
+        <span className="truncate text-xs text-muted-foreground">{hint}</span>
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+    </div>
+  )
+}
+
+/** One segmented control style for theme and counts: a muted track, the chosen option raised. */
+const SEGMENT = 'flex h-8 items-center justify-center gap-1.5 truncate rounded-md px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-checked:bg-background data-checked:text-foreground data-checked:shadow-sm'
+
+/** Settings as a compact shadcn-style block that fits a phone screen without scrolling: Appearance (theme, reduce
+    motion), Counts, Map layers (one card of switches) and About the data. Choices are kept in this browser. */
 export function SettingsDialog({ open, onOpenChange, settings, onChange, meta }: Props) {
   const { theme, setTheme } = useTheme()
   const count = COUNTS.find((c) => c.value === settings.countMode) ?? COUNTS[0]
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-6 overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-3.5 overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
 
         <Section title="Appearance">
-          <RadioGroup aria-label="Theme" value={theme ?? 'system'} onValueChange={(v) => setTheme(String(v))} className="grid grid-cols-3 gap-2">
+          <RadioGroup aria-label="Theme" value={theme ?? 'system'} onValueChange={(v) => setTheme(String(v))} className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
             {THEMES.map(({ value, label, icon: Icon }) => (
-              <Radio.Root key={value} value={value} nativeButton render={<button type="button" />}
-                className="flex flex-col items-center gap-2 rounded-lg border bg-card px-2 py-3 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-checked:border-foreground data-checked:text-foreground data-checked:ring-1 data-checked:ring-foreground">
-                <Icon className="size-5" />{label}
+              <Radio.Root key={value} value={value} nativeButton render={<button type="button" />} className={SEGMENT}>
+                <Icon className="size-4" />{label}
               </Radio.Root>
             ))}
           </RadioGroup>
-          <div className="flex items-center gap-3 rounded-lg border px-3 py-2.5">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"><Waves className="size-4" /></span>
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <Label htmlFor="setting-motion">Reduce motion</Label>
-              <span className="text-xs text-muted-foreground">Turn off animations and camera flights</span>
-            </div>
-            <Switch id="setting-motion" checked={settings.reduceMotion} onCheckedChange={(v) => onChange({ ...settings, reduceMotion: v })} />
+          <div className="rounded-lg border">
+            <SwitchRow id="setting-motion" label="Reduce motion" hint="Turn off animations and camera flights" checked={settings.reduceMotion}
+              onChange={(v) => onChange({ ...settings, reduceMotion: v })} />
           </div>
         </Section>
 
@@ -82,8 +94,7 @@ export function SettingsDialog({ open, onOpenChange, settings, onChange, meta }:
           <RadioGroup aria-label="Counts shown" value={settings.countMode} onValueChange={(v) => onChange({ ...settings, countMode: v as CountMode })}
             className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
             {COUNTS.map(({ value, label }) => (
-              <Radio.Root key={value} value={value} nativeButton render={<button type="button" />}
-                className="h-8 truncate rounded-md px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-checked:bg-background data-checked:text-foreground data-checked:shadow-sm">
+              <Radio.Root key={value} value={value} nativeButton render={<button type="button" />} className={SEGMENT}>
                 {label}
               </Radio.Root>
             ))}
@@ -93,28 +104,21 @@ export function SettingsDialog({ open, onOpenChange, settings, onChange, meta }:
 
         <Section title="Map layers">
           <div data-testid="map-layers" className="divide-y rounded-lg border">
-            {LAYERS.map(({ key, label, hint, icon: Icon }) => (
-              <div key={key} className="flex items-center gap-3 px-3 py-2.5">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"><Icon className="size-4" /></span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <Label htmlFor={`setting-${key}`}>{label}</Label>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
-                </div>
-                <Switch id={`setting-${key}`} checked={settings[key]} onCheckedChange={(v) => onChange({ ...settings, [key]: v })} />
-              </div>
+            {LAYERS.map(({ key, label, hint }) => (
+              <SwitchRow key={key} id={`setting-${key}`} label={label} hint={hint} checked={settings[key]} onChange={(v) => onChange({ ...settings, [key]: v })} />
             ))}
           </div>
         </Section>
 
         <Section title="About the data">
-          <div data-testid="about-data" className="flex gap-3 rounded-lg bg-muted/60 p-3">
-            <Database className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div data-testid="about-data" className="rounded-lg bg-muted/60 p-3 text-xs">
             {meta ? (
-              <dl className="grid min-w-0 flex-1 grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-                <dt className="text-muted-foreground">Updated</dt><dd>{new Date(meta.builtAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</dd>
-                <dt className="text-muted-foreground">Transformers</dt><dd className="font-mono tabular-nums">{meta.transformerCount.toLocaleString('en-US')}</dd>
-                <dt className="text-muted-foreground">Buildings</dt><dd className="font-mono tabular-nums">{meta.buildingCount.toLocaleString('en-US')}</dd>
-                <dt className="text-muted-foreground">Source</dt><dd className="leading-relaxed">{meta.source}</dd>
+              // Three facts side by side (each label over its value), then the source across the full width.
+              <dl className="grid grid-cols-[auto_auto_auto] justify-between gap-x-3 gap-y-0.5">
+                <dt className="row-start-1 text-muted-foreground">Updated</dt><dd className="row-start-2 whitespace-nowrap">{new Date(meta.builtAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+                <dt className="row-start-1 text-muted-foreground">Transformers</dt><dd className="row-start-2 font-mono tabular-nums">{meta.transformerCount.toLocaleString('en-US')}</dd>
+                <dt className="row-start-1 text-muted-foreground">Buildings</dt><dd className="row-start-2 font-mono tabular-nums">{meta.buildingCount.toLocaleString('en-US')}</dd>
+                <dt className="col-span-3 mt-1.5 text-muted-foreground">Source</dt><dd className="col-span-3 leading-snug">{meta.source}</dd>
               </dl>
             ) : (
               <p className="text-xs text-muted-foreground">Data details unavailable.</p>

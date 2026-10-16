@@ -86,7 +86,8 @@ export default function MapView({ transformers, visible, settings, view, tint, c
     if (!map) return
     const c = map.getContainer()
     const around = map.unproject([(hiddenLeft() + c.clientWidth) / 2, (c.clientHeight - bottomInset) / 2])
-    map.easeTo({ zoom: map.getZoom() + dir, around, duration: reducedMotion() ? 0 : undefined })
+    // A real duration, never undefined: MapLibre copies an explicit undefined over its default and the ease ends at NaN.
+    map.easeTo({ zoom: map.getZoom() + dir, around, duration: motion(500) })
   }
   const warnedBuildings = useRef(false)
   const [failed, setFailed] = useState<string | null>(TOKEN ? null : 'Map unavailable: NEXT_PUBLIC_MAPBOX_TOKEN is not set.')
@@ -145,7 +146,7 @@ export default function MapView({ transformers, visible, settings, view, tint, c
     const map = ref.current
     if (!map || !loaded) return
     map.resize()
-    // The details pane (desktop, along the bottom) or the phone's half-height sheet covers the bottom of the map; pad
+    // The details pane (desktop, along the bottom) or the phone's third-height sheet covers the bottom of the map; pad
     // camera moves to land in the rest.
     const opensPanel = camera.kind === 'transformer' || camera.kind === 'selection'
     const desktop = window.matchMedia('(min-width: 1024px)').matches
@@ -153,7 +154,7 @@ export default function MapView({ transformers, visible, settings, view, tint, c
       top: 0,
       left: hiddenLeft(),
       right: 0,
-      bottom: desktop ? (opensPanel ? Math.max(bottomInset, panelHeight) : bottomInset) : opensPanel ? Math.round(window.innerHeight * 0.5) : 0,
+      bottom: desktop ? (opensPanel ? Math.max(bottomInset, panelHeight) : bottomInset) : opensPanel ? Math.round(window.innerHeight / 3) : 0,
     }
     const around = (px: number) => ({ top: pad.top + px, left: pad.left + px, right: pad.right + px, bottom: pad.bottom + px })
     // Padding is always animated as part of the move (absolutePadding on fits), never reset first: resetting it shifted

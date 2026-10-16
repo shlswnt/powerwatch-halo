@@ -239,3 +239,16 @@ test('the map credits start with "Maps " before the Mapbox copyright', async ({ 
   await page.goto('/')
   await expect(page.locator('.maplibregl-ctrl-attrib-inner')).toContainText('Maps © Mapbox')
 })
+
+test('the zoom in and zoom out buttons zoom the map', async ({ page }) => {
+  await page.goto('/?t=f1e7b9aa')
+  await expect(page.getByRole('region', { name: 'Transformer details' })).toBeVisible()
+  await page.waitForTimeout(2500) // the opening flight has finished
+  const canvas = page.locator('.maplibregl-canvas')
+  for (const name of ['Zoom out', 'Zoom in']) {
+    const before = await canvas.screenshot()
+    await page.getByRole('button', { name }).click()
+    await page.waitForTimeout(1200)
+    expect((await canvas.screenshot()).equals(before), `${name} moved the map`).toBe(false)
+  }
+})

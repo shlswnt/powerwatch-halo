@@ -14,7 +14,7 @@ test('settings are grouped into labelled sections', async ({ page, isMobile }) =
   for (const name of ['Appearance', 'Counts', 'Map layers', 'About the data']) await expect(d.getByRole('heading', { name })).toBeVisible()
 })
 
-test('theme is chosen from three icon cards; picking one applies it', async ({ page, isMobile }) => {
+test('theme is a segmented control of three icon options; picking one applies it', async ({ page, isMobile }) => {
   const d = await openSettings(page, isMobile)
   const theme = d.getByRole('radiogroup', { name: 'Theme' })
   for (const name of ['Light', 'Dark', 'System']) await expect(theme.getByRole('radio', { name }).locator('svg')).toBeVisible()
@@ -103,4 +103,17 @@ test('appearance has a Reduce motion switch: on, things stop animating, and it i
   await page.getByRole('dialog', { name: 'Settings' }).getByRole('switch', { name: 'Reduce motion' }).click()
   await expect(page.locator('html')).not.toHaveAttribute('data-motion', 'reduce')
   expect(await still('[data-testid="selection-bar"]')).toBe(false)
+})
+
+test('on phones the whole settings dialog fits on screen, with nothing to scroll', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'phone sizes')
+  for (const [width, height] of [[390, 844], [375, 667], [360, 640]]) {
+    await page.setViewportSize({ width, height })
+    const d = await openSettings(page, isMobile)
+    await page.waitForTimeout(300) // the open animation
+    expect(await d.evaluate((el) => el.scrollHeight <= el.clientHeight + 1), `${width}×${height}: no scroll`).toBe(true)
+    const b = (await d.boundingBox())!
+    expect(b.y, `${width}×${height}: top on screen`).toBeGreaterThanOrEqual(0)
+    expect(b.y + b.height, `${width}×${height}: bottom on screen`).toBeLessThanOrEqual(height)
+  }
 })

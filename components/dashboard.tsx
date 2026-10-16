@@ -34,7 +34,11 @@ const MapView = dynamic(() => import('@/components/map-view'), { ssr: false, loa
 
 /** shadcn inset sidebar shell (as in the sidebar-inset example): sidebar on the left, the map in the inset. */
 /** Phone details sheet: half height, or full. */
-const SNAP_POINTS = [0.5, 1]
+// Phones: the details sheet opens at a third of the screen and can be pulled up to full height, or down to a peek that
+// keeps its header (title, copy link, ✕) and handle on screen. The map is then clear while the selection is kept.
+const PEEK = '76px'
+const THIRD = 1 / 3
+const SNAP_POINTS = [PEEK, THIRD, 1]
 
 export function Dashboard() {
   return (
@@ -87,6 +91,7 @@ function DashboardBody() {
   // Details pop up on the right when something is selected; the panel button hides / re-shows them.
   const [panelOpen, setPanelOpen] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(() => view.selected.length > 0) // phones: details in a bottom sheet
+  const [snap, setSnap] = useState<number | string | null>(THIRD)
   // The desktop pane's real height (it grows on narrow maps), so camera framing and the credits clear it.
   const paneRef = useRef<HTMLElement>(null)
   const [paneHeight, setPaneHeight] = useState(320)
@@ -188,6 +193,7 @@ function DashboardBody() {
   const show = (next: ViewState) => {
     setPanelOpen(true)
     setSheetOpen(true)
+    setSnap((s) => (s === PEEK ? THIRD : s)) // a peeking sheet comes back up to show what was picked
     if (!next.overlap) setOpenMobile(false)
     if (next.selected.length) fitSelection(next.selected)
   }
@@ -228,6 +234,7 @@ function DashboardBody() {
   const closeDetails = () => {
     setPanelOpen(false)
     setSheetOpen(false)
+    setSnap(THIRD) // the next selection opens at a third again
     // Leave panelOpen false: the URL change lands a frame after any state set here, so reopening now would briefly
     // re-show the old selection and bounce the card. Every path that selects again (pick, toggle) reopens it.
     setTimeout(() => updateView(clearSelection), 300)
@@ -297,13 +304,23 @@ function DashboardBody() {
       </SidebarInset>
 
       {isMobile && (
-        // Taps on the map don't dismiss it (they pick transformers, and closing would replay the slide-in each time):
-        // it closes with ✕, a swipe down, or when nothing is selected any more.
-        // Only a swipe down or Escape dismisses it (✕ has its own handler). The list sheet opening over it takes focus,
-        // which must not close it: the details stay behind the list.
-        <Drawer open={shown} onOpenChange={(o, d) => !o && (d.reason === 'swipe' || d.reason === 'escape-key') && setSheetOpen(false)}
-          modal={false} disablePointerDismissal snapPoints={SNAP_POINTS}>
-          {/* At the half-height snap the bottom of the sheet sits below the screen; the details body pads by that offset so
+        // While something is selected the sheet never goes away on its own: only ✕ (its own handler) closes it and clears
+        // the selection. A swipe down past the peek, or Escape, just leaves it peeking. Taps on the map don't dismiss it
+        // (they pick transformers), and the list sheet opening over it takes focus, which must not close it either.
+        <Drawer open={shown} onOpenChange={(o, d) => {
+            if (o || (d.reason !== 'swipe' && d.reason !== 'escape-key')) return
+            d.cancel() // stay open (cancelling also stops Base UI resetting the snap point), and drop to the peek
+            setSnap(PEEK)
+          }}
+          // A swipe down past the lowest point asks to dismiss by setting the snap point to null: refuse, and peek.
+          onSnapPointChange={(p, d) => {
+            if (p === null) {
+              d.cancel()
+              setSnap(PEEK)
+            } else setSnap(p)
+          }}
+          modal={false} disablePointerDismissal showSwipeHandle snapPoints={SNAP_POINTS} snapPoint={snap}>
+          {/* Below full height the bottom of the sheet sits below the screen; the details body pads by that offset so
               its end is reachable. Base UI's variable doesn't inherit, so the sheet copies it to --sheet-offset. */}
           <DrawerContent className="h-[100dvh] [--sheet-offset:var(--drawer-snap-point-offset,0px)]">
             <DrawerTitle className="sr-only">Details</DrawerTitle>
