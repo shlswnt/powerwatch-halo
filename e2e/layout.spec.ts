@@ -260,7 +260,7 @@ test('phones: tapping the map leaves the overlap sheet open and still (no slide-
   await expect(page.getByRole('region', { name: 'Overlap' })).toBeVisible()
 })
 
-test('phones: the details sheet scrolls all the way to the end of the table, at half height too', async ({ page, isMobile }) => {
+test('phones: the details sheet scrolls all the way to the end of the table, at a third of the screen too', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'phone sheet')
   await page.goto(OVERLAP3)
   const ov = page.getByRole('region', { name: 'Overlap' })
