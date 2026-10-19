@@ -1,7 +1,7 @@
 {
-  "builtAt": "2026-10-15T01:36:42.465Z",
+  "builtAt": "2026-10-19T13:23:05.737Z",
   "source": "Google Open Buildings v3 + Microsoft Building Footprints, merged by VIDA (Sierra Leone)",
-  "transformerCount": 525,
-  "buildingCount": 412004,
+  "transformerCount": 542,
+  "buildingCount": 430126,
   "warnings": []
 }

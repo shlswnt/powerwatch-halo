@@ -10,7 +10,7 @@ const make = (i: number, town: TownId, lat = 0, lon = i, all = 0, hi = 0): Trans
 
 function goodSet(extra: Transformer[] = []): Transformer[] {
   const refs = REFERENCES.map((r, i) => make(1000 + i, r.town, r.lat, r.lon, r.all, r.hi))
-  const towns = TOWNS.filter((t) => t.id !== 'moriba' && t.id !== 'koidu')
+  const towns = TOWNS.filter((t) => t.id !== 'moriba')
   const filler = Array.from({ length: MIN_TRANSFORMERS - refs.length }, (_, i) => make(i, towns[i % towns.length].id))
   return [...refs, ...filler, ...extra]
 }
@@ -18,7 +18,7 @@ function goodSet(extra: Transformer[] = []): Transformer[] {
 describe('sanityCheck', () => {
   it('passes on a good set', () => expect(sanityCheck(goodSet())).toEqual([]))
   it('passes when new pins are added, including a new town', () =>
-    expect(sanityCheck(goodSet(Array.from({ length: 12 }, (_, i) => make(5000 + i, 'koidu'))))).toEqual([]))
+    expect(sanityCheck(goodSet(Array.from({ length: 12 }, (_, i) => make(5000 + i, 'moriba'))))).toEqual([]))
   it('fails below 525 transformers', () =>
     expect(sanityCheck(goodSet().slice(0, 500)).join('\n')).toContain('at least 525'))
   it('fails when a surveyed town disappears', () =>
