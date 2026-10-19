@@ -214,8 +214,8 @@ test('the city list is grouped and roomy: All cities, then surveyed cities with 
   await expect(groups.nth(0)).toHaveAccessibleName('Surveyed')
   await expect(groups.nth(1)).toHaveAccessibleName('Not yet surveyed')
   await expect(groups.nth(0).getByRole('option', { name: /Freetown/ })).toBeVisible()
-  await expect(groups.nth(1).getByRole('option', { name: /Koidu/ })).toBeAttached()
-  await expect(groups.nth(0).getByRole('option', { name: /Koidu/ })).toHaveCount(0)
+  await expect(groups.nth(1).getByRole('option', { name: /Moriba/ })).toBeAttached()
+  await expect(groups.nth(0).getByRole('option', { name: /Moriba/ })).toHaveCount(0)
   await expect(list.locator('[data-slot="select-separator"]').first()).toBeAttached()
   const row = (await list.getByRole('option', { name: /Freetown/ }).boundingBox())!
   expect(row.height).toBeGreaterThanOrEqual(32)

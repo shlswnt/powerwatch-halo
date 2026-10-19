@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import meta from '../public/data/meta.json'
 
 async function openSettings(page: Page, isMobile: boolean) {
   await page.goto('/')
@@ -59,7 +60,7 @@ test('about the data reads as labelled facts', async ({ page, isMobile }) => {
   const d = await openSettings(page, isMobile)
   const about = d.getByTestId('about-data')
   await expect(about.getByText('Transformers', { exact: true })).toBeVisible()
-  await expect(about.getByText('525', { exact: true })).toBeVisible()
+  await expect(about.getByText(meta.transformerCount.toLocaleString('en-US'), { exact: true })).toBeVisible()
   await expect(about.getByText('Buildings', { exact: true })).toBeVisible()
   await expect(about.getByText('Source', { exact: true })).toBeVisible()
 })

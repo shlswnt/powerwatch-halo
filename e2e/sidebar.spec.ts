@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import meta from '../public/data/meta.json'
 
 test.beforeEach(async ({ page, isMobile }) => {
   await page.goto('/')
@@ -45,7 +46,7 @@ test('Sort is an icon at the right end of the count row that opens a menu of sor
   await expect(page.getByLabel('Sort', { exact: true }).locator('select')).toHaveCount(0)
   await expect(page.locator('select#tx-sort')).toHaveCount(0)
   const sort = page.getByRole('button', { name: /^Sort/ })
-  const countEl = page.getByText(/^525 transformers$/)
+  const countEl = page.getByText(`${meta.transformerCount} transformers`, { exact: true })
   await expect(countEl).toBeInViewport()
   const csv = page.getByRole('button', { name: 'Export counts as CSV' })
   const search = page.getByRole('searchbox', { name: 'Search transformers' })
@@ -75,7 +76,7 @@ test('CSV downloads the listed transformers', async ({ page }) => {
   const text = await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString())
   const lines = text.split('\n')
   expect(lines[0]).toMatch(/^id,name,town,lat,lon,kva,b0_100m/)
-  expect(lines).toHaveLength(526)
+  expect(lines).toHaveLength(meta.transformerCount + 1) // header + one row each
 })
 
 test('only the transformer rows scroll; search, CSV and the count row stay in view', async ({ page }) => {

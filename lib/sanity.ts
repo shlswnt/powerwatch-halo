@@ -3,7 +3,7 @@ import type { TownId, Transformer } from './types'
 export const MIN_TRANSFORMERS = 525
 
 export const TOWNS_WITH_DATA: TownId[] = [
-  'freetown', 'bo', 'kenema', 'lunsar', 'lungi', 'port-loko', 'makeni', 'bumbuna', 'moyamba', 'magburaka',
+  'freetown', 'bo', 'kenema', 'lunsar', 'lungi', 'port-loko', 'makeni', 'bumbuna', 'moyamba', 'magburaka', 'koidu',
 ]
 
 /** 500 m cumulative counts measured 2026-10-14 (VIDA SLE parquet, bbox centre, haversine). */
